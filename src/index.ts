@@ -1,153 +1,62 @@
-// interface 描述对象的形状和结构，可以给数据增加类型
-// type的方式，通过别名来重新定义类型
-
-// interface 可以被类实现和继承，type 没有这个功能
-// type 可以使用联合类型，interface 不能使用联合类型
-
-// 1）如何用接口描述对象类型，如果有联合类型，就使用type
-// type IObj = { name: string, age: number } | string;
-
-interface IObj {
-  name: string;
-  age: number;
-}
-
-const getObj = (obj: IObj) => {
-
-}
-
-getObj({ name: 'cj', age: 18 });
-
-// 2）描述函数类型
-// interface ISum {
-//   (a: string, b: string): string
-// }
-type ISum = (a: string, b: string) => string;
-const sum: ISum = (a: string, b: string) => {
-  return a + b;
-}
-
-// 3）希望写个计数器的例子，每次调用函数就累加1
-interface ICount {  //接口中的混合类型
-  (): number;
-  count: number;
-}
-const fn: ICount = (() => { //函数返回函数，一般要表示函数的返回类型
-  return ++fn.count
-}) as ICount
-fn.count = 0;
-
-console.log(fn());  // 1
-console.log(fn());  // 2
-
-// 4）接口的特性
-// interface IVegetables {
-//   color: string;
-//   taste: string;
-// }
-
-// 4.1）直接断言，断言后可以直接使用，要保证接口中限制的数据必须有
-// const tomato: IVegetables = {
-//   color: 'red',
-//   taste: 'sweet',
-//   size: 'big'
-// } as IVegetables;
-
-// 4.2）接口的合并
-// interface IVegetables {
-//   size: string;
-// }
-// const tomato: IVegetables = {
-//   color: 'red',
-//   taste: 'sweet',
-//   size: 'big'
-// }
-
-// 4.3）单独写一个tomato接口，继承蔬菜接口
-// interface ITomato extends IVegetables{  //接口继承，ts里面的
-//   size:string;
-// }
-// const tomato: ITomato = {
-//   color: 'red',
-//   taste: 'sweet',
-//   size: 'big'
-// }
-
-// 4.4）可选属性，可以通过?来实现
-// interface IVegetables {
-//   color: string;
-//   taste: string;
-//   [key: string]: any; //任意接口，可多填
-// }
-// const tomato: IVegetables = {
-//   color: 'red',
-//   taste: 'sweet',
-//   id: 1,
-//   1: 1
-// }
-
-// 4.5）可索引接口
-// interface ILikeArray {
-//   [key: number]: any
-// }
-// let arr: ILikeArray = [1, 2, 3];
-// let arr1: ILikeArray = { 1: 1, 2: 2 };
-
-// 把一个对象赋值给一个接口，要满足接口中的所有属性
-// 如果多出来的属性，可以采用断言、可选、任意接口
-
-// 接口中的类型，可以通过类型别名的方式拿出来，但是只能用[]
-// type MyType = { key: string, value: string };
-// interface IArr {
-//   arr: MyType[],
-//   a: {
-//     n: MyType
+// 泛型的用处在于当我们调用的时候确定类型，而不是一开始就写好类型，类型不确定，只有执行的时候才能确定
+// 声明的时候需要用<>包裹起来，传值的时候也需要
+// 1.单个泛型
+// function createArray<T>(times: number, value: T): Array<T> {  //根据对应参数的类型给T赋值
+//   let result = []
+//   for (let i = 0; i < times; i++) {
+//     result.push(value);
 //   }
+//   return result;
 // }
-// type My = IArr['a']['n'];
+// let r = createArray(5, 'abc');
+// interface IMyArray<T> {
+//   [key: number]: T
+// }
+// interface ICreateArray {
+//   <T>(x: number, y: T): IMyArray<T>; //interface后面的类型和函数前面的区别，如果放在函数前表示使用函数的时候确定类型，放在接口后面表示是使用接口的时候确定
+// }
+// // type ICreateArray = <T>(x: number, y: T) => Array<T>; //如果泛型没传参，是unknown类型
+// const createArray: ICreateArray = <T>(times: number, value: T): IMyArray<T> => {
+//   let result = []
+//   for (let i = 0; i < times; i++) {
+//     result.push(value);
+//   }
+//   return result;
+// }
+// createArray(3, 'abc');
 
-// 6）接口实现 接口可以被类实现 接口中的方法都是抽象（没有具体实现）的
-interface Ispeakable {
-  name: string,
-  // 用接口来形容类的时候，void表示不关心返回值
-  speak(): void //描述当前实例上的方法，或者原型的方法
-}
-interface IChineseSpeakable {
-  speakChinese(): void
-}
-class Speaker implements Ispeakable, IChineseSpeakable {  //类本身需要实现接口中的方法
-  speakChinese(): void {
-    throw new Error('Method not implemented.');
-  }
-  name!: string;
-  // speak: () => void;
-  // constructor() {
-  //   this.speak = function () {
 
-  //   }
-  // }
-  speak(): string {
-    return 'xxx';
-  }
+// 元祖进行类型交换
+// 2.多个泛型
+// const swap = <T, K>(tuple: [T, K]): [K, T] => {
+//   return [tuple[1], tuple[0]];
+// }
+
+// let r = swap(['abc', 123]);  // => [123,'abc']  能确定的只有两项
+
+
+// const sum = <T extends string>(a: T, b: T): T => {  //约束对象
+//   return (a + b) as T;
+// }
+// sum('1', '2');
+
+// 3.泛型约束 主要强调类型中必须包含某个属性
+// [1,2,3] [4,5,6]
+type withLen = { length: number }
+const computeArrayLength = <T extends withLen, K extends withLen>(arr1: T, arr2: K): number => {
+  return arr1.length + arr2.length;
+}
+computeArrayLength([1, 2, 3], { length: 3 });
+
+
+const getVal = <T extends object, K extends keyof T>(obj: T, key: K) => {
 
 }
-let s = new Speaker();
-s.speak()
+type T1 = keyof { a: 1, b: 2 };
+type T2 = keyof string;
+type T3 = keyof any;  //string | number | symbol
 
-// 7）抽象类，不能被new，可以被继承
-abstract class Animal { //只有类被标记成abstract，属性才可以描述成abstract的
-  abstract name: string //没有具体事项，需要子类实现
-  eat() {
-    console.log('eat');
-  }
-  abstract drink(): void
-}
-class Cat extends Animal {
-  drink(): void {
-    console.log('Method not implemented.');
-  }
-  name: string = 'a';
-}
+getVal({ a: 1, b: 2 }, 'b')
 
 
 export { }
