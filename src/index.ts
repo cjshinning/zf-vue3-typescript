@@ -1,119 +1,40 @@
-// 类型保护主要靠的就是js的特性
+// 交叉类型 = 交集（和数学中的有点差异）
 
-// 1.typeof 区分类型保护变量
-function fn(val: string | number) {
-  if (typeof val === 'string') {
-    val.match
-  } else {
-    val.toFixed
-  }
+interface Person1 {
+  handsome: string,
+  // a: string  
 }
+interface Person2 {
+  height: string,
+  // a: number
+}
+type Person3 = Person1 & Person2; //并集 & 交集
 
-// 2.instanceof
-class Person { eat() { } }
-class Dog { }
-const createClass = (clazz: new () => Person | Dog) => {
-  return new clazz;
-}
-let r = createClass(Person);
-if (r instanceof Person) {
-  r //Person
-} else {
-  r  //Dog
+let person: Person3 = {
+  handsome: '帅',
+  height: '高'
 }
 
-// 3.in语法
-interface Fish {
-  swiming: string
-}
-interface Bird {
-  fly: string
-}
-function isFish(animal: Fish | Bird): animal is Fish {
-  return 'swiming' in animal;
-}
-function getAnimalType(animal: Fish | Bird) {
-  if (isFish(animal)) {
-    animal
-  } else {
-    animal
-  }
+// 在原有的类型基础上想去扩展属性，可以用交叉类型
+// ts的核心是为了安全，交叉类型可以赋予给没有交叉之前的类型
+let p1: Person1 = person;
+let p2: Person2 = person;
+
+// 类型兼容
+// 交叉类型，可以不生成一个新的类型，作为临时类型来使用
+
+type Person4 = Person2 & { money: string };
+let p4: Person4 = {
+  height: '高',
+  money: '有钱'
 }
 
-// 以上情况都是通过js判断出来的，可以增加一个字面量类型进行判断，可识别类型
-interface IButton1 {
-  color: 'blue',
-  class: string
+// 方法mixin默认推断会生成交集
+function mixin<T extends object, K extends object>(o1: T, o2: K): T & K {
+  return { ...o1, ...o2 };
 }
-interface IButton2 {
-  color: 'green',
-  class: string
-}
-function getButton(button: IButton1 | IButton2) {
-  if (button.color === 'blue') {
-    button
-  } else {
-    button
-  }
-}
+// 后续真正合并熟悉的时候，要以一方为基础，不会直接香蕉，可能会导致never情况
+let r = mixin({ name: 'cj', age: 18 }, { address: 'xxx', name: 12 })
 
-// js语法 用来定义自己的类型
-function isString(val: any): val is string {
-  return Object.prototype.toString.call(val) == '[object String]';
-}
-let str = 1
-if (isString(str)) {
-  str
-}
-
-// null保护 val!=null ! ?
-function getNum(val: number | null) {
-  val = val || 3;
-  val.toFixed //明确是数字
-
-  function inner() { //内层函数可能会判断不正常
-    // if (val !== null) {
-    val?.toFixed
-    // }
-
-  }
-  inner();
-}
-
-// 代码的完整性保护 主要靠never，利用never无法到达最终结果的特性，来保证代码的完整
-interface ISquare {
-  kind: 'square',
-  width: number
-}
-interface IRant {
-  kind: 'rant',
-  width: number,
-  height: number
-}
-interface ICircle {
-  kind: 'circle',
-  r: number
-}
-
-const assert = (obj: never) => { throw new Error('err') }
-// 完整性保护，保证代码逻辑全部覆盖到
-function getArea(obj: ISquare | IRant | ICircle) {
-  switch (obj.kind) {
-    case 'square':
-      return obj.width * obj.width;
-      break;
-    case 'rant':
-      return obj.width * obj.height;
-      break;
-    case 'circle':
-      return
-      break;
-    default:
-      assert(obj);
-  }
-}
-getArea({ kind: 'circle', r: 10 });
-
-// typeof instanceof in ts可是被类型is语法 完整度保护 null保护
 
 export { }
