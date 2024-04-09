@@ -1,62 +1,119 @@
-// 泛型的用处在于当我们调用的时候确定类型，而不是一开始就写好类型，类型不确定，只有执行的时候才能确定
-// 声明的时候需要用<>包裹起来，传值的时候也需要
-// 1.单个泛型
-// function createArray<T>(times: number, value: T): Array<T> {  //根据对应参数的类型给T赋值
-//   let result = []
-//   for (let i = 0; i < times; i++) {
-//     result.push(value);
-//   }
-//   return result;
-// }
-// let r = createArray(5, 'abc');
-// interface IMyArray<T> {
-//   [key: number]: T
-// }
-// interface ICreateArray {
-//   <T>(x: number, y: T): IMyArray<T>; //interface后面的类型和函数前面的区别，如果放在函数前表示使用函数的时候确定类型，放在接口后面表示是使用接口的时候确定
-// }
-// // type ICreateArray = <T>(x: number, y: T) => Array<T>; //如果泛型没传参，是unknown类型
-// const createArray: ICreateArray = <T>(times: number, value: T): IMyArray<T> => {
-//   let result = []
-//   for (let i = 0; i < times; i++) {
-//     result.push(value);
-//   }
-//   return result;
-// }
-// createArray(3, 'abc');
+// 类型保护主要靠的就是js的特性
 
-
-// 元祖进行类型交换
-// 2.多个泛型
-// const swap = <T, K>(tuple: [T, K]): [K, T] => {
-//   return [tuple[1], tuple[0]];
-// }
-
-// let r = swap(['abc', 123]);  // => [123,'abc']  能确定的只有两项
-
-
-// const sum = <T extends string>(a: T, b: T): T => {  //约束对象
-//   return (a + b) as T;
-// }
-// sum('1', '2');
-
-// 3.泛型约束 主要强调类型中必须包含某个属性
-// [1,2,3] [4,5,6]
-type withLen = { length: number }
-const computeArrayLength = <T extends withLen, K extends withLen>(arr1: T, arr2: K): number => {
-  return arr1.length + arr2.length;
+// 1.typeof 区分类型保护变量
+function fn(val: string | number) {
+  if (typeof val === 'string') {
+    val.match
+  } else {
+    val.toFixed
+  }
 }
-computeArrayLength([1, 2, 3], { length: 3 });
 
-
-const getVal = <T extends object, K extends keyof T>(obj: T, key: K) => {
-
+// 2.instanceof
+class Person { eat() { } }
+class Dog { }
+const createClass = (clazz: new () => Person | Dog) => {
+  return new clazz;
 }
-type T1 = keyof { a: 1, b: 2 };
-type T2 = keyof string;
-type T3 = keyof any;  //string | number | symbol
+let r = createClass(Person);
+if (r instanceof Person) {
+  r //Person
+} else {
+  r  //Dog
+}
 
-getVal({ a: 1, b: 2 }, 'b')
+// 3.in语法
+interface Fish {
+  swiming: string
+}
+interface Bird {
+  fly: string
+}
+function isFish(animal: Fish | Bird): animal is Fish {
+  return 'swiming' in animal;
+}
+function getAnimalType(animal: Fish | Bird) {
+  if (isFish(animal)) {
+    animal
+  } else {
+    animal
+  }
+}
 
+// 以上情况都是通过js判断出来的，可以增加一个字面量类型进行判断，可识别类型
+interface IButton1 {
+  color: 'blue',
+  class: string
+}
+interface IButton2 {
+  color: 'green',
+  class: string
+}
+function getButton(button: IButton1 | IButton2) {
+  if (button.color === 'blue') {
+    button
+  } else {
+    button
+  }
+}
+
+// js语法 用来定义自己的类型
+function isString(val: any): val is string {
+  return Object.prototype.toString.call(val) == '[object String]';
+}
+let str = 1
+if (isString(str)) {
+  str
+}
+
+// null保护 val!=null ! ?
+function getNum(val: number | null) {
+  val = val || 3;
+  val.toFixed //明确是数字
+
+  function inner() { //内层函数可能会判断不正常
+    // if (val !== null) {
+    val?.toFixed
+    // }
+
+  }
+  inner();
+}
+
+// 代码的完整性保护 主要靠never，利用never无法到达最终结果的特性，来保证代码的完整
+interface ISquare {
+  kind: 'square',
+  width: number
+}
+interface IRant {
+  kind: 'rant',
+  width: number,
+  height: number
+}
+interface ICircle {
+  kind: 'circle',
+  r: number
+}
+
+const assert = (obj: never) => { throw new Error('err') }
+// 完整性保护，保证代码逻辑全部覆盖到
+function getArea(obj: ISquare | IRant | ICircle) {
+  switch (obj.kind) {
+    case 'square':
+      return obj.width * obj.width;
+      break;
+    case 'rant':
+      return obj.width * obj.height;
+      break;
+    case 'circle':
+      return
+      break;
+    default:
+      assert(obj);
+  }
+}
+getArea({ kind: 'circle', r: 10 });
+
+// typeof instanceof in ts可是被类型is语法 完整度保护 null保护
 
 export { }
