@@ -1,96 +1,75 @@
-// ts中的兼容性 我们希望可以相互赋值
-
-// 普通类型 接口 函数 类
-
-// 1.基本类型的兼容性 默认情况下都是定义好类型后不能复制给其他类型
-
-type NumOrStr = number | string;
-let numOrStr: NumOrStr = 'abc'; //| 表示大的类型 子类型 -> 父类型
-
-// 检测方式，鸭子检测，只要叫声像鸭子，就是鸭子
-type MyString = {
-  toString(): string
+// ts中的条件类型，满足某个条件给一个类型，不满足给另一个类型
+interface Fish {
+  name: string,
+  type: '鱼'
 }
-// let str: MyString = { toString: () => 'xxx' };
-let str: MyString = 'hello';  //多的条件可以赋予给少的条件，一切都是为了安全
-
-interface IVegetables {
-  color: string,
-  taste: string
+interface Bird {
+  name: string,
+  type: '鸟'
 }
-interface ITomato { //将一个值赋予给了类型，是不会出现兼容性的，要求必须满足这个接口，两个接口之前是存在兼容性问题的
-  color: string,
-  taste: string,
+interface Swimming {
+  swimming: string
+}
+interface Sky {
+  sky: string
+}
+type MyType<T> = T extends Bird ? Sky : Swimming; //三元表达式，如果传入的是一个联合类型，它会进行条件的分发 Fish extends Bird | Bird extends Bird
+type IEnv = MyType<Fish | Bird> //Swimming | Sky 这个类型具备分发功能
+// type IEnv = MyType<Fish & Bird> //这个类型不具备分发功能
+
+// 如果用户传递了name熟悉，就必须传递age
+// 其他情况下，用户可以只传递age
+
+interface ISchool1 {
+  name: string,
+  age: number
+}
+interface ISchool2 {
+  age?: number,
   size: string
 }
-// let vegetable!:IVegetables;
-// let tomato: ITomato;
+type School<T> = T extends { name: string } ? ISchool1 : ISchool2;
+type MySchool = School<{ name: 'cj' }>
 
-// let tomato: IVegetables = {
-// color: 'red',
-// taste: 'sweet'
-// }
-
-let vegetable: IVegetables;
-let tomato = {
-  color: 'red',
-  taste: 'sweet',
-  size: 'big'
-}
-vegetable = tomato; //通过接口的兼容性，可以处理赋予多的属性
-
-// 3.函数的兼容性 （1）函数的参数和（2）返回值  类型的兼容 类型的复制可能会发生兼容性处理
-// let sum1 = (a: string, b: string): string => a + b;
-// let sum2 = (a: string): string => a;
-
-// 针对参数的个数和返回值
-// sum1 = sum2;  //我允许你传递两个参数，但是你传递了一个，安全；我只能传递一个，你给了我两个，不安全
-
-function forEach<T>(arr: T[], cb: (item: T, inex: number, arr: T[]) => void) {
-  for (let i = 0; i < arr.length; i++) {
-    cb(arr[i], i, arr);
-  }
-}
-forEach([1, 2, 3, 4], (item, index, arr) => {
-  console.log(item);
-})
-
-type sum1 = (a: string, b: string) => string | number;
-type sum2 = (a: string) => number
-let sum1!: sum1;
-let sum2!: sum2;
-sum1 = sum2;
-
-// 针对参数的类型做兼容处理
-// 逆变和协变 函数的参数是逆变的，可以传父类 函数的返回值是协变的，可以返回子类
-// 传逆父 返协子
-// 参数可以传父类，返回值可以传子类
-
-class Parent {
-  money!: string
-}
-class Child extends Parent {
-  house!: string
-}
-class Grandson extends Child {
-  eat!: string
+let s: MySchool = {
+  name: 'xxx',
+  age: 18
 }
 
-// 对于参数而言，儿子可以处理钱和房子
-function getFn(cb: (person: Child) => Child) {
+// ts中内置的类型 内置类型包含条件的情况（内部用条件来实现的）
+// Exclude:在多个类型中排除掉某几个类型
+type Exclude<T, K> = T extends K ? never : T;
+type MyExclude = Exclude<string | number | boolean, boolean>;
 
+// Exact:多个属性中 抽离某几个
+type Extract<T, K> = T extends K ? T : never;
+type MyExtract = Extract<string | number | boolean, boolean>;
+
+// 在多个类型中排除null类型
+
+type NonNullable<T> = T extends null | undefined ? never : T;
+type MyNonNullable = NonNullable<string | number | null | undefined>
+
+// -------------------infer 推断-------------------------
+function getSchool(x: string, y: string) {
+  return { name: 'cj', age: 18 }
 }
-// Child Parent => Child Grandson
-// getFn((person: Child) => new Child);
-getFn((person: Parent) => new Grandson);
+// infer要配合extends关键词，否则无法使用，infer有推荐类型的跟你，可以自动推断出结果
+type ReturnType<T extends (...args: any[]) => any> = T extends (...args: any[]) => infer R ? R : any;
+type MyReturnType = ReturnType<typeof getSchool>;
 
-let fn: (person: Child) => Child = (person: Parent) => new Grandson;
-fn(new Child);
 
-function getType(cb: (val: string | number) => string) {
+type Parameters<T extends (...args: any[]) => any> = T extends (...args: infer P) => any ? P : any;
+type MyParameters = Parameters<typeof getSchool>
 
+
+class Person {
+  constructor(name: string) { }
 }
+type ConstructorParameters<T extends new (...args: any[]) => any> = T extends new (...args: infer CP) => any ? CP : any;
+type MyConstructorParameters = ConstructorParameters<typeof Person>;
 
 
+type x = InstanceType<typeof Person>;
 
 export { }
