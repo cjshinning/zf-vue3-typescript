@@ -1,75 +1,68 @@
-// ts中的条件类型，满足某个条件给一个类型，不满足给另一个类型
-interface Fish {
+// ts中奇特的内置类型，根据定义好的已有的类型，演变出一些其他类型
+interface ICompany {
   name: string,
-  type: '鱼'
-}
-interface Bird {
-  name: string,
-  type: '鸟'
-}
-interface Swimming {
-  swimming: string
-}
-interface Sky {
-  sky: string
-}
-type MyType<T> = T extends Bird ? Sky : Swimming; //三元表达式，如果传入的是一个联合类型，它会进行条件的分发 Fish extends Bird | Bird extends Bird
-type IEnv = MyType<Fish | Bird> //Swimming | Sky 这个类型具备分发功能
-// type IEnv = MyType<Fish & Bird> //这个类型不具备分发功能
-
-// 如果用户传递了name熟悉，就必须传递age
-// 其他情况下，用户可以只传递age
-
-interface ISchool1 {
-  name: string,
-  age: number
-}
-interface ISchool2 {
-  age?: number,
-  size: string
-}
-type School<T> = T extends { name: string } ? ISchool1 : ISchool2;
-type MySchool = School<{ name: 'cj' }>
-
-let s: MySchool = {
-  name: 'xxx',
-  age: 18
+  address: string
 }
 
-// ts中内置的类型 内置类型包含条件的情况（内部用条件来实现的）
-// Exclude:在多个类型中排除掉某几个类型
-type Exclude<T, K> = T extends K ? never : T;
-type MyExclude = Exclude<string | number | boolean, boolean>;
-
-// Exact:多个属性中 抽离某几个
-type Extract<T, K> = T extends K ? T : never;
-type MyExtract = Extract<string | number | boolean, boolean>;
-
-// 在多个类型中排除null类型
-
-type NonNullable<T> = T extends null | undefined ? never : T;
-type MyNonNullable = NonNullable<string | number | null | undefined>
-
-// -------------------infer 推断-------------------------
-function getSchool(x: string, y: string) {
-  return { name: 'cj', age: 18 }
+interface IPerson {
+  name?: string,
+  age: number,
+  company?: ICompany
 }
-// infer要配合extends关键词，否则无法使用，infer有推荐类型的跟你，可以自动推断出结果
-type ReturnType<T extends (...args: any[]) => any> = T extends (...args: any[]) => infer R ? R : any;
-type MyReturnType = ReturnType<typeof getSchool>;
 
+// Partial：表示选项可以是选填的，深度递归，默认不是深度递归
+// type Partial<T> = {
+//   [K in keyof T]?: T[K] extends object ? Partial<T[K]> : T[K]
+// }
+type MyPerson = Partial<IPerson>;
+// let person: MyPerson = {
+//   name: 'cj',
+//   age: 18,
+//   company: {
+//     name: 'xxx',
+//     address: 'yyy'
+//   }
+// }
 
-type Parameters<T extends (...args: any[]) => any> = T extends (...args: infer P) => any ? P : any;
-type MyParameters = Parameters<typeof getSchool>
+// 把所有可选的变成必填 -? 去掉可选
+// type Required<T> = { [K in keyof T]-?: T[K] };
+type MyRequire = Required<MyPerson>;
 
+// Readonly
+type MyReadonly = Readonly<MyPerson>;
 
-class Person {
-  constructor(name: string) { }
+// Pick 精挑细选  (对象里选属性)
+type Pick<T, K extends keyof T> = {
+  [X in K]: T[X]
 }
-type ConstructorParameters<T extends new (...args: any[]) => any> = T extends new (...args: infer CP) => any ? CP : any;
-type MyConstructorParameters = ConstructorParameters<typeof Person>;
+type MyPick = Pick<IPerson, 'age' | 'company'>; //挑选属性
 
+// Omit 忽略属性
 
-type x = InstanceType<typeof Person>;
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+type MyOmit = Omit<IPerson, 'name'> & { name: string };
+
+// let t: MyOmit = {
+//   name: 'xxx',
+//   age: 123
+// }
+
+// Record类型
+let obj: Record<string, any> = { a: 1, b: 2 }
+
+// map方法
+
+function map<K extends keyof any, V, X>(obj: Record<K, V>, cb: (item: V, key: K) => X): Record<K, X> {
+  let result = {} as Record<K, X>;
+  for (let key in obj) {
+    result[key] = cb(obj[key], key)
+  }
+  return result;
+}
+
+map({ name: 'cj', age: 12 }, (item, key) => {
+  return '$' + item;
+})
+
 
 export { }
