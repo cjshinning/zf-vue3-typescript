@@ -1,68 +1,116 @@
-// ts中奇特的内置类型，根据定义好的已有的类型，演变出一些其他类型
-interface ICompany {
-  name: string,
-  address: string
+// ts 装包和拆包
+// ref(10)=> xxx.value 在模板取值 拆包{{xxx}} 泛型
+
+let data = {
+  name: 'cj',
+  age: 12
 }
 
-interface IPerson {
-  name?: string,
-  age: number,
-  company?: ICompany
+type Proxy<T> = {
+  get(): T,
+  set(value: any): void
+}
+type Proxify<T extends object> = {
+  [K in keyof T]: Proxy<T[K]>
 }
 
-// Partial：表示选项可以是选填的，深度递归，默认不是深度递归
-// type Partial<T> = {
-//   [K in keyof T]?: T[K] extends object ? Partial<T[K]> : T[K]
-// }
-type MyPerson = Partial<IPerson>;
-// let person: MyPerson = {
-//   name: 'cj',
-//   age: 18,
-//   company: {
-//     name: 'xxx',
-//     address: 'yyy'
-//   }
-// }
+function proxify<T extends object>(obj: T): Proxify<T> {
+  let result = {} as Proxify<T>;
 
-// 把所有可选的变成必填 -? 去掉可选
-// type Required<T> = { [K in keyof T]-?: T[K] };
-type MyRequire = Required<MyPerson>;
-
-// Readonly
-type MyReadonly = Readonly<MyPerson>;
-
-// Pick 精挑细选  (对象里选属性)
-type Pick<T, K extends keyof T> = {
-  [X in K]: T[X]
-}
-type MyPick = Pick<IPerson, 'age' | 'company'>; //挑选属性
-
-// Omit 忽略属性
-
-type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
-type MyOmit = Omit<IPerson, 'name'> & { name: string };
-
-// let t: MyOmit = {
-//   name: 'xxx',
-//   age: 123
-// }
-
-// Record类型
-let obj: Record<string, any> = { a: 1, b: 2 }
-
-// map方法
-
-function map<K extends keyof any, V, X>(obj: Record<K, V>, cb: (item: V, key: K) => X): Record<K, X> {
-  let result = {} as Record<K, X>;
   for (let key in obj) {
-    result[key] = cb(obj[key], key)
+    let value = obj[key];
+    result[key] = {
+      get() {
+        return value
+      },
+      set(newValue) {
+        value = newValue;
+      }
+    }
+  }
+
+  return result;
+}
+let proxyData = proxify(data);
+// 为什么vue没用这种方式，需要用户学习新的api
+console.log(proxyData.name.get());
+proxyData.name.set('xxx');
+console.log(proxyData.name.get());
+
+function unProxify<T extends object>(obj: Proxify<T>): T {
+  let result = {} as T;
+  for (let key in obj) {
+    let value = obj[key];
+    result[key] = value.get();
   }
   return result;
 }
+let data2 = unProxify(proxyData);
+console.log(data2);
 
-map({ name: 'cj', age: 12 }, (item, key) => {
-  return '$' + item;
-})
+// let data1 = {
+//   name: {
+//     get() {
+//       return 'xxx';
+//     },
+//     set() {
+//       // 更改属性
+//     }
+//   },
+//   age: {
+//     get() {
+//       return 'xxx';
+//     },
+//     set() {
+//       // 更改属性
+//     }
+//   }
+// }
+
+
+let person1 = {
+  name: 'cj',
+  age: 12,
+  address: 'xxx'
+}
+let person2 = {
+  address: 'xxx'
+}
+// 差集 获取两个类型的差集 exclude 在一群类型中忽略掉某个类型 和 omit 对象中忽略
+type Diff<T extends object, K extends object> = Omit<T, keyof K>;
+type myDiff = Diff<typeof person1, typeof person2>;
+
+// 交集 不是交叉类型 从一个对象中跳去某个类型
+type Inter<T extends object, K extends object> = Extract<keyof T, keyof K>;
+type myInter = Inter<typeof person1, typeof person2>;
+
+type Person1 = {
+  name: string,
+  age: number
+}
+
+type Person2 = {
+  age: string,
+  address: string,
+  a: string,
+  b: number
+}
+
+// 两个对象合并，一般都是以后者为准，如果Person1里有的，Person2里没有的再进行添加
+
+// 1.需要拿到多余肯定需要的
+// 2.公共的以后面的为准
+type Merge<T extends object, K extends object> = Diff<T, K> & Diff<K, T>;
+type myMerge = Merge<Person1, Person2>
+
+let merge: myMerge = {
+  name: 'abc',
+  address: 'abc',
+  a: '1',
+  b: 0
+}
+
+// type Merge<T extends object, K extends object> = Omit<T, keyof K> & K;
 
 
 export { }
